@@ -6,6 +6,8 @@ class MultiFingerprintApp {
         this.currentUser = null;
         this.clientId = null;
         this.fingerprintData = {};
+        this.loginCaptchaToken = null;
+        this.registerCaptchaToken = null;
         this.bindEvents();
         this.setupRealTimeUpdates();
         this.checkAuthStatus();
@@ -17,19 +19,19 @@ class MultiFingerprintApp {
         try {
             console.log('正在初始化多重指紋採集系統...');
             this.updateStatus('正在載入指紋採集系統...', 'ready');
-            
+
             // 初始化 Client ID
             this.initClientId();
-            
+
             // 載入 FingerprintJS
             await this.loadFingerprintJS();
-            
+
             // 初始化 Canvas 指紋
             this.initCanvasFingerprint();
-            
+
             this.isInitialized = true;
             console.log('多重指紋採集系統初始化成功');
-            
+
             // 等待 DOM 完全載入後再更新 UI
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', () => {
@@ -40,7 +42,7 @@ class MultiFingerprintApp {
                 this.updateStatus('準備就緒，點擊「開始採集指紋」按鈕開始測試', 'ready');
                 this.clearResults();
             }
-            
+
         } catch (error) {
             console.error('多重指紋採集系統初始化失敗:', error);
             this.showError('系統初始化失敗: ' + error.message);
@@ -97,19 +99,19 @@ class MultiFingerprintApp {
     async waitForFingerprintJS() {
         let attempts = 0;
         const maxAttempts = 30;
-        
+
         while (attempts < maxAttempts) {
             if (typeof FingerprintJS !== 'undefined') {
                 console.log('FingerprintJS 已載入');
                 return;
             }
-            
+
             console.log(`等待 FingerprintJS 載入... (${attempts + 1}/${maxAttempts})`);
             this.updateStatus(`等待 FingerprintJS 載入... (${attempts + 1}/${maxAttempts})`, 'collecting');
             await new Promise(resolve => setTimeout(resolve, 500));
             attempts++;
         }
-        
+
         throw new Error('FingerprintJS 載入超時');
     }
 
@@ -118,40 +120,40 @@ class MultiFingerprintApp {
         try {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             // 設定 Canvas 大小
             canvas.width = 200;
             canvas.height = 200;
-            
+
             // 繪製複雜的圖形來產生獨特的指紋
             ctx.fillStyle = '#f0f0f0';
             ctx.fillRect(0, 0, 200, 200);
-            
+
             ctx.fillStyle = '#ff0000';
             ctx.fillRect(10, 10, 50, 50);
-            
+
             ctx.fillStyle = '#00ff00';
             ctx.fillRect(70, 70, 50, 50);
-            
+
             ctx.fillStyle = '#0000ff';
             ctx.fillRect(130, 130, 50, 50);
-            
+
             // 添加文字
             ctx.fillStyle = '#000000';
             ctx.font = '16px Arial';
             ctx.fillText('Canvas Fingerprint', 10, 180);
-            
+
             // 添加複雜的圖形
             ctx.beginPath();
             ctx.arc(100, 100, 30, 0, 2 * Math.PI);
             ctx.strokeStyle = '#ff6600';
             ctx.lineWidth = 3;
             ctx.stroke();
-            
+
             // 取得 Canvas 指紋
             const canvasFingerprint = canvas.toDataURL();
             this.fingerprintData.canvas = canvasFingerprint;
-            
+
             console.log('Canvas 指紋初始化完成');
         } catch (error) {
             console.error('Canvas 指紋初始化失敗:', error);
@@ -164,7 +166,7 @@ class MultiFingerprintApp {
         try {
             this.updateStatus('正在採集多重指紋...', 'collecting');
             this.disableButton('collectBtn');
-            
+
             const startTime = Date.now();
             const fingerprintData = {
                 timestamp: startTime,
@@ -218,21 +220,21 @@ class MultiFingerprintApp {
 
             // 更新系統資訊顯示
             this.updateSystemInfoDisplay(fingerprintData);
-            
+
             // 更新 FingerprintJS V4 結果顯示
             this.updateFingerprintJSDisplay(fingerprintData);
-            
+
             // 更新調試資訊
             this.updateDebugInfo(fingerprintData);
-            
+
             // 顯示結果
             this.displayMultiFingerprintResults(fingerprintData);
-            
+
             // 發送到伺服器
             await this.sendMultiFingerprintToServer(fingerprintData);
-            
+
             // 注意：狀態更新由 sendMultiFingerprintToServer 處理，這裡不需要重複設置
-            
+
         } catch (error) {
             console.error('多重指紋採集失敗:', error);
             this.showError('指紋採集失敗: ' + error.message);
@@ -244,7 +246,7 @@ class MultiFingerprintApp {
     // 採集自定義指紋
     async collectCustomFingerprint() {
         const custom = {};
-        
+
         try {
             // 基本瀏覽器資訊
             custom.userAgent = navigator.userAgent;
@@ -256,7 +258,7 @@ class MultiFingerprintApp {
             custom.hardwareConcurrency = navigator.hardwareConcurrency;
             custom.deviceMemory = navigator.deviceMemory;
             custom.maxTouchPoints = navigator.maxTouchPoints;
-            
+
             // 螢幕資訊
             custom.screen = {
                 width: screen.width,
@@ -266,7 +268,7 @@ class MultiFingerprintApp {
                 colorDepth: screen.colorDepth,
                 pixelDepth: screen.pixelDepth
             };
-            
+
             // 視窗資訊
             custom.window = {
                 innerWidth: window.innerWidth,
@@ -275,15 +277,15 @@ class MultiFingerprintApp {
                 outerHeight: window.outerHeight,
                 devicePixelRatio: window.devicePixelRatio
             };
-            
+
             // 時區和時間
             custom.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             custom.timezoneOffset = new Date().getTimezoneOffset();
-            
+
             // 本地化設定
             custom.locale = Intl.DateTimeFormat().resolvedOptions().locale;
             custom.numberFormat = Intl.NumberFormat().resolvedOptions().locale;
-            
+
             // 電池資訊（如果可用）
             if (navigator.getBattery) {
                 try {
@@ -298,7 +300,7 @@ class MultiFingerprintApp {
             } else {
                 custom.battery = 'not_supported';
             }
-            
+
             // 連接資訊
             if (navigator.connection) {
                 custom.connection = {
@@ -307,33 +309,33 @@ class MultiFingerprintApp {
                     rtt: navigator.connection.rtt
                 };
             }
-            
+
         } catch (error) {
             console.error('自定義指紋採集錯誤:', error);
             custom.error = error.message;
         }
-        
+
         return custom;
     }
 
     // 採集 WebGL 指紋
     collectWebGLFingerprint() {
         const webgl = {};
-        
+
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            
+
             if (gl) {
                 // 基本資訊
                 webgl.vendor = gl.getParameter(gl.VENDOR);
                 webgl.renderer = gl.getParameter(gl.RENDERER);
                 webgl.version = gl.getParameter(gl.VERSION);
-                
+
                 // 擴展資訊
                 const extensions = gl.getSupportedExtensions();
                 webgl.extensions = extensions;
-                
+
                 // 參數資訊
                 webgl.parameters = {
                     maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
@@ -342,39 +344,39 @@ class MultiFingerprintApp {
                     aliasedLineWidthRange: gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE),
                     aliasedPointSizeRange: gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)
                 };
-                
+
                 // 繪製測試圖形
                 gl.clearColor(0.2, 0.3, 0.4, 1.0);
                 gl.clear(gl.COLOR_BUFFER_BIT);
-                
+
                 // 取得像素資料
                 const pixels = new Uint8Array(4);
                 gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
                 webgl.pixelData = Array.from(pixels);
-                
+
             } else {
                 webgl.error = 'WebGL not supported';
             }
-            
+
         } catch (error) {
             console.error('WebGL 指紋採集錯誤:', error);
             webgl.error = error.message;
         }
-        
+
         return webgl;
     }
 
     // 採集音訊指紋
     async collectAudioFingerprint() {
         const audio = {};
-        
+
         try {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
+
             // 基本資訊
             audio.sampleRate = audioContext.sampleRate;
             audio.state = audioContext.state;
-            
+
             // 如果 AudioContext 被暫停，嘗試恢復
             if (audioContext.state === 'suspended') {
                 try {
@@ -385,60 +387,60 @@ class MultiFingerprintApp {
                     return audio;
                 }
             }
-            
+
             // 創建振盪器
             const oscillator = audioContext.createOscillator();
             const analyser = audioContext.createAnalyser();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(analyser);
             analyser.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             // 設定參數
             oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
             gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-            
+
             // 開始和停止
             oscillator.start();
             oscillator.stop(audioContext.currentTime + 0.1);
-            
+
             // 等待一小段時間讓音訊處理完成
             await new Promise(resolve => setTimeout(resolve, 150));
-            
+
             // 取得頻率資料
             const frequencyData = new Uint8Array(analyser.frequencyBinCount);
             analyser.getByteFrequencyData(frequencyData);
-            
+
             // 計算雜湊
             let hash = 0;
             for (let i = 0; i < frequencyData.length; i++) {
                 hash = ((hash << 5) - hash) + frequencyData[i];
                 hash = hash & hash; // 轉換為 32 位整數
             }
-            
+
             audio.fingerprint = hash.toString(16);
-            
+
             // 關閉音訊上下文
             try {
                 await audioContext.close();
             } catch (closeError) {
                 console.warn('關閉 AudioContext 失敗:', closeError);
             }
-            
+
         } catch (error) {
             console.error('音訊指紋採集錯誤:', error);
             audio.error = error.message;
             audio.fingerprint = 'error';
         }
-        
+
         return audio;
     }
 
     // 採集字體指紋
     collectFontFingerprint() {
         const fonts = {};
-        
+
         try {
             // 測試字體列表
             const testFonts = [
@@ -448,42 +450,42 @@ class MultiFingerprintApp {
                 'Tahoma', 'Geneva', 'Lucida Sans Unicode', 'Franklin Gothic Medium',
                 'Arial Narrow', 'Brush Script MT'
             ];
-            
+
             const testString = 'mmmmmmmmmmlli';
             const testSize = '72px';
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            
+
             // 基準字體
             context.font = testSize + ' monospace';
             const baseWidth = context.measureText(testString).width;
-            
+
             const availableFonts = [];
-            
+
             testFonts.forEach(font => {
                 context.font = testSize + ' ' + font + ', monospace';
                 const width = context.measureText(testString).width;
-                
+
                 if (width !== baseWidth) {
                     availableFonts.push(font);
                 }
             });
-            
+
             fonts.available = availableFonts;
             fonts.count = availableFonts.length;
-            
+
         } catch (error) {
             console.error('字體指紋採集錯誤:', error);
             fonts.error = error.message;
         }
-        
+
         return fonts;
     }
 
     // 採集插件指紋
     collectPluginFingerprint() {
         const plugins = {};
-        
+
         try {
             // 瀏覽器插件
             if (navigator.plugins) {
@@ -499,7 +501,7 @@ class MultiFingerprintApp {
                 plugins.browser = pluginList;
                 plugins.count = pluginList.length;
             }
-            
+
             // MIME 類型
             if (navigator.mimeTypes) {
                 const mimeList = [];
@@ -513,29 +515,29 @@ class MultiFingerprintApp {
                 }
                 plugins.mimeTypes = mimeList;
             }
-            
+
         } catch (error) {
             console.error('插件指紋採集錯誤:', error);
             plugins.error = error.message;
         }
-        
+
         return plugins;
     }
 
     // 採集硬體指紋
     async collectHardwareFingerprint() {
         const hardware = {};
-        
+
         try {
             // CPU 核心數
             hardware.cores = navigator.hardwareConcurrency || 'unknown';
-            
+
             // 記憶體
             hardware.memory = navigator.deviceMemory || 'unknown';
-            
+
             // 觸控點數
             hardware.touchPoints = navigator.maxTouchPoints || 0;
-            
+
             // 電池資訊
             if (navigator.getBattery) {
                 try {
@@ -552,7 +554,7 @@ class MultiFingerprintApp {
             } else {
                 hardware.battery = 'not_supported';
             }
-            
+
             // 網路連接
             if (navigator.connection) {
                 hardware.connection = {
@@ -562,7 +564,7 @@ class MultiFingerprintApp {
                     saveData: navigator.connection.saveData
                 };
             }
-            
+
             // 感測器支援
             hardware.sensors = {
                 accelerometer: 'Accelerometer' in window,
@@ -571,12 +573,12 @@ class MultiFingerprintApp {
                 absoluteOrientation: 'AbsoluteOrientationSensor' in window,
                 relativeOrientation: 'RelativeOrientationSensor' in window
             };
-            
+
         } catch (error) {
             console.error('硬體指紋採集錯誤:', error);
             hardware.error = error.message;
         }
-        
+
         return hardware;
     }
 
@@ -588,66 +590,66 @@ class MultiFingerprintApp {
             if (userAgentElement && data.custom?.userAgent) {
                 userAgentElement.textContent = data.custom.userAgent.substring(0, 50) + '...';
             }
-            
+
             // 更新螢幕解析度
             const screenResolutionElement = document.getElementById('screenResolution');
             if (screenResolutionElement && data.custom?.screen) {
                 screenResolutionElement.textContent = `${data.custom.screen.width} × ${data.custom.screen.height}`;
             }
-            
+
             // 更新瀏覽器視窗
             const viewportSizeElement = document.getElementById('viewportSize');
             if (viewportSizeElement && data.custom?.window) {
                 viewportSizeElement.textContent = `${data.custom.window.innerWidth} × ${data.custom.window.innerHeight}`;
             }
-            
+
             // 更新時區
             const timezoneElement = document.getElementById('timezone');
             if (timezoneElement && data.custom?.timezone) {
                 timezoneElement.textContent = data.custom.timezone;
             }
-            
+
             // 更新語言偏好
             const languageElement = document.getElementById('language');
             if (languageElement && data.custom?.language) {
                 languageElement.textContent = data.custom.language;
             }
-            
+
             // 更新作業系統
             const platformElement = document.getElementById('platform');
             if (platformElement && data.custom?.platform) {
                 platformElement.textContent = data.custom.platform;
             }
-            
+
             // 更新 CPU 核心數
             const hardwareConcurrencyElement = document.getElementById('hardwareConcurrency');
             if (hardwareConcurrencyElement && data.custom?.hardwareConcurrency) {
                 hardwareConcurrencyElement.textContent = `${data.custom.hardwareConcurrency} 核心`;
             }
-            
+
             // 更新裝置記憶體
             const deviceMemoryElement = document.getElementById('deviceMemory');
             if (deviceMemoryElement && data.custom?.deviceMemory) {
                 deviceMemoryElement.textContent = `${data.custom.deviceMemory} GB`;
             }
-            
+
             // 更新元件統計
             const totalComponentsElement = document.getElementById('totalComponents');
             const successfulComponentsElement = document.getElementById('successfulComponents');
             const failedComponentsElement = document.getElementById('failedComponents');
             const averageDurationElement = document.getElementById('averageDuration');
-            
+
             if (data.components) {
                 const totalComponents = Object.keys(data.components).length;
                 const successfulComponents = Object.values(data.components).filter(comp => !comp.error).length;
                 const failedComponents = totalComponents - successfulComponents;
-                
+
                 if (totalComponentsElement) totalComponentsElement.textContent = totalComponents;
                 if (successfulComponentsElement) successfulComponentsElement.textContent = successfulComponents;
                 if (failedComponentsElement) failedComponentsElement.textContent = failedComponents;
                 if (averageDurationElement) averageDurationElement.textContent = `${data.collectionTime}ms`;
             }
-            
+
         } catch (error) {
             console.error('更新系統資訊顯示失敗:', error);
         }
@@ -657,11 +659,11 @@ class MultiFingerprintApp {
     resetSystemInfoDisplay() {
         try {
             const elements = [
-                'userAgent', 'screenResolution', 'viewportSize', 'timezone', 
+                'userAgent', 'screenResolution', 'viewportSize', 'timezone',
                 'language', 'platform', 'hardwareConcurrency', 'deviceMemory',
                 'totalComponents', 'successfulComponents', 'failedComponents', 'averageDuration'
             ];
-            
+
             elements.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
@@ -674,7 +676,7 @@ class MultiFingerprintApp {
                     }
                 }
             });
-            
+
             // 重置 FingerprintJS V4 結果顯示
             const fingerprintIds = ['visitorId', 'confidence', 'version', 'collectionTime'];
             fingerprintIds.forEach(id => {
@@ -683,13 +685,13 @@ class MultiFingerprintApp {
                     element.textContent = '尚未採集';
                 }
             });
-            
+
             // 重置調試資訊
             const debugOutput = document.getElementById('debugOutput');
             if (debugOutput) {
                 debugOutput.textContent = '準備採集...';
             }
-            
+
         } catch (error) {
             console.error('重置系統資訊顯示失敗:', error);
         }
@@ -703,25 +705,25 @@ class MultiFingerprintApp {
             if (visitorIdElement && data.visitorId) {
                 visitorIdElement.textContent = data.visitorId;
             }
-            
+
             // 更新信心度
             const confidenceElement = document.getElementById('confidence');
             if (confidenceElement && data.confidence) {
                 confidenceElement.textContent = data.confidence;
             }
-            
+
             // 更新版本
             const versionElement = document.getElementById('version');
             if (versionElement && data.version) {
                 versionElement.textContent = data.version;
             }
-            
+
             // 更新採集時間
             const collectionTimeElement = document.getElementById('collectionTime');
             if (collectionTimeElement && data.collectionTime) {
                 collectionTimeElement.textContent = `${data.collectionTime}ms`;
             }
-            
+
         } catch (error) {
             console.error('更新 FingerprintJS V4 顯示失敗:', error);
         }
@@ -746,7 +748,7 @@ class MultiFingerprintApp {
                     plugins: data.plugins ? `已採集 (${data.plugins.count} 個插件)` : '未採集',
                     hardware: data.hardware ? '已採集' : '未採集'
                 };
-                
+
                 debugOutput.textContent = JSON.stringify(debugInfo, null, 2);
             }
         } catch (error) {
@@ -757,12 +759,12 @@ class MultiFingerprintApp {
     // 顯示多重指紋結果
     displayMultiFingerprintResults(data) {
         const resultContainer = document.getElementById('componentsList');
-        
+
         if (!resultContainer) {
             console.error('找不到 componentsList 元素');
             return;
         }
-        
+
         let html = `
             <div class="fingerprintjs-section">
                 <h3>FingerprintJS V4 結果</h3>
@@ -833,9 +835,9 @@ class MultiFingerprintApp {
                     <strong>可用字體數量:</strong> <span class="highlight">${data.fonts?.count || 0}</span>
                 </div>
                 <div class="components-list">
-                    ${(data.fonts?.available || []).slice(0, 10).map(font => 
-                        `<div class="component-item">${font}</div>`
-                    ).join('')}
+                    ${(data.fonts?.available || []).slice(0, 10).map(font =>
+            `<div class="component-item">${font}</div>`
+        ).join('')}
                     ${data.fonts?.available?.length > 10 ? `<div class="component-item">... 還有 ${data.fonts.available.length - 10} 個字體</div>` : ''}
                 </div>
             </div>
@@ -846,9 +848,9 @@ class MultiFingerprintApp {
                     <strong>插件數量:</strong> <span class="highlight">${data.plugins?.count || 0}</span>
                 </div>
                 <div class="components-list">
-                    ${(data.plugins?.browser || []).slice(0, 5).map(plugin => 
-                        `<div class="component-item">${plugin.name}</div>`
-                    ).join('')}
+                    ${(data.plugins?.browser || []).slice(0, 5).map(plugin =>
+            `<div class="component-item">${plugin.name}</div>`
+        ).join('')}
                     ${data.plugins?.browser?.length > 5 ? `<div class="component-item">... 還有 ${data.plugins.browser.length - 5} 個插件</div>` : ''}
                 </div>
             </div>
@@ -894,17 +896,17 @@ class MultiFingerprintApp {
     displaySimilarityResults(topMatches) {
         console.log('displaySimilarityResults 被調用，topMatches:', topMatches);
         const resultContainer = document.getElementById('componentsList');
-        
+
         if (!resultContainer) {
             console.error('找不到 componentsList 元素');
             return;
         }
-        
+
         if (!topMatches || topMatches.length === 0) {
             console.log('沒有相似度資料');
             return;
         }
-        
+
         // 在現有結果下方添加相似度結果
         const similarityHtml = `
             <div class="fingerprintjs-section similarity-results">
@@ -928,7 +930,7 @@ class MultiFingerprintApp {
                 </div>
             </div>
         `;
-        
+
         // 將相似度結果添加到結果容器末尾
         resultContainer.innerHTML += similarityHtml;
     }
@@ -972,7 +974,7 @@ class MultiFingerprintApp {
 
             const result = await response.json();
             console.log('伺服器回應:', result);
-            
+
             if (response.ok) {
                 console.log('處理伺服器回應，isLoggedIn:', result.isLoggedIn, 'isGuest:', result.isGuest);
                 if (result.isLoggedIn) {
@@ -1045,7 +1047,7 @@ class MultiFingerprintApp {
                 this.closePrivacyModal();
             }
         });
-        
+
         // ESC 鍵關閉彈出視窗
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -1089,13 +1091,13 @@ class MultiFingerprintApp {
     showAuthModal() {
         const authModal = document.getElementById('authModal');
         const modalTitle = document.getElementById('modalTitle');
-        
+
         this.showLoginForm();
         modalTitle.textContent = '用戶登入';
-        
+
         // 載入登入 CAPTCHA
         this.loadCaptcha('login');
-        
+
         authModal.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
@@ -1104,41 +1106,41 @@ class MultiFingerprintApp {
     async loadCaptcha(type) {
         try {
             console.log(`開始載入 ${type} CAPTCHA...`);
-            
+
             const response = await fetch('/api/captcha');
             console.log('CAPTCHA API 回應狀態:', response.status);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
             console.log('CAPTCHA API 回應資料:', data);
-            
+
+            // 將 HMAC token 儲存到實例變數中
+            if (type === 'login') {
+                this.loginCaptchaToken = data.captchaToken;
+            } else {
+                this.registerCaptchaToken = data.captchaToken;
+            }
+
             const questionElement = document.getElementById(`${type}CaptchaQuestion`);
             const inputElement = document.getElementById(`${type}Captcha`);
-            
+
             if (questionElement) {
                 questionElement.textContent = data.question;
                 console.log(`已更新 ${type} CAPTCHA 問題:`, data.question);
             } else {
                 console.error(`找不到 ${type}CaptchaQuestion 元素`);
             }
-            
+
             if (inputElement) {
                 inputElement.value = '';
             }
-            
-            // 如果有警告，顯示給用戶
-            if (data.warning) {
-                console.warn('CAPTCHA 警告:', data.warning);
-                // 可以在這裡添加用戶提示
-            }
-            
+
         } catch (error) {
             console.error(`載入 ${type} CAPTCHA 錯誤:`, error);
-            
-            // 顯示錯誤給用戶
+
             const questionElement = document.getElementById(`${type}CaptchaQuestion`);
             if (questionElement) {
                 questionElement.textContent = '載入失敗，請重試';
@@ -1177,7 +1179,7 @@ class MultiFingerprintApp {
         document.getElementById('loginForm').style.display = 'block';
         document.getElementById('registerForm').style.display = 'none';
         modalTitle.textContent = '用戶登入';
-        
+
         // 載入登入 CAPTCHA
         this.loadCaptcha('login');
     }
@@ -1188,7 +1190,7 @@ class MultiFingerprintApp {
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('registerForm').style.display = 'block';
         modalTitle.textContent = '用戶註冊';
-        
+
         // 載入註冊 CAPTCHA
         this.loadCaptcha('register');
     }
@@ -1199,10 +1201,10 @@ class MultiFingerprintApp {
         if (resultContainer) {
             resultContainer.innerHTML = '';
         }
-        
+
         // 重置系統資訊顯示
         this.resetSystemInfoDisplay();
-        
+
         this.updateStatus('準備就緒，點擊「開始採集指紋」按鈕開始測試', 'ready');
     }
 
@@ -1280,7 +1282,7 @@ class MultiFingerprintApp {
         const currentUserDisplay = document.getElementById('currentUserDisplay');
         const guestUserDisplay = document.getElementById('guestUserDisplay');
         const currentUserName = document.getElementById('currentUserName');
-        
+
         if (userStatus) {
             if (this.currentUser) {
                 // 底部狀態
@@ -1288,7 +1290,7 @@ class MultiFingerprintApp {
                 userStatus.className = 'user-status logged-in-user';
                 if (toggleAuthBtn) toggleAuthBtn.style.display = 'none';
                 if (logoutBtn) logoutBtn.style.display = 'inline-block';
-                
+
                 // 頂部使用者顯示
                 if (currentUserDisplay) currentUserDisplay.style.display = 'block';
                 if (guestUserDisplay) guestUserDisplay.style.display = 'none';
@@ -1299,7 +1301,7 @@ class MultiFingerprintApp {
                 userStatus.className = 'user-status ready';
                 if (toggleAuthBtn) toggleAuthBtn.style.display = 'inline-block';
                 if (logoutBtn) logoutBtn.style.display = 'none';
-                
+
                 // 頂部使用者顯示
                 if (currentUserDisplay) currentUserDisplay.style.display = 'none';
                 if (guestUserDisplay) guestUserDisplay.style.display = 'block';
@@ -1336,6 +1338,7 @@ class MultiFingerprintApp {
                     username,
                     password,
                     captcha,
+                    captchaToken: this.loginCaptchaToken,
                     rememberMe
                 })
             });
@@ -1412,7 +1415,8 @@ class MultiFingerprintApp {
                     username,
                     email: email || null,
                     password,
-                    captcha
+                    captcha,
+                    captchaToken: this.registerCaptchaToken
                 })
             });
 
