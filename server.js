@@ -12,22 +12,25 @@ const CAPTCHA_SECRET = process.env.CAPTCHA_SECRET || 'captcha-hmac-secret-2025';
 
 // 簡單的數學 CAPTCHA 驗證
 function generateMathCaptcha() {
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
     const operators = ['+', '-', '*'];
     const operator = operators[Math.floor(Math.random() * operators.length)];
 
-    let answer;
-    switch (operator) {
-        case '+':
-            answer = num1 + num2;
-            break;
-        case '-':
-            answer = Math.abs(num1 - num2); // 確保結果為正數
-            break;
-        case '*':
-            answer = num1 * num2;
-            break;
+    let num1, num2, answer;
+
+    if (operator === '-') {
+        // 確保減法結果不為負數：num1 >= num2
+        num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+        num1 = num2 + Math.floor(Math.random() * 9); // num1 >= num2
+        answer = num1 - num2;
+    } else if (operator === '*') {
+        // 乘法用小數字避免答案過大
+        num1 = Math.floor(Math.random() * 5) + 1; // 1-5
+        num2 = Math.floor(Math.random() * 5) + 1; // 1-5
+        answer = num1 * num2;
+    } else {
+        num1 = Math.floor(Math.random() * 10) + 1;
+        num2 = Math.floor(Math.random() * 10) + 1;
+        answer = num1 + num2;
     }
 
     return {
@@ -133,7 +136,8 @@ db.serialize(() => {
     // 資料庫初始化完成
 
     // 資料庫遷移：補充缺少的欄位（舊資料庫相容性）
-    db.run(`ALTER TABLE accounts ADD COLUMN email TEXT UNIQUE`, (err) => {
+    // SQLite 的 ALTER TABLE 不支援 UNIQUE 限制字，需直接新增欄位
+    db.run(`ALTER TABLE accounts ADD COLUMN email TEXT`, (err) => {
         if (err && !err.message.includes('duplicate column name')) {
             console.error('遷移 email 欄位錯誤:', err.message);
         } else if (!err) {
