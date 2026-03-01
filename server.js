@@ -131,6 +131,23 @@ db.serialize(() => {
     `);
 
     // 資料庫初始化完成
+
+    // 資料庫遷移：補充缺少的欄位（舊資料庫相容性）
+    db.run(`ALTER TABLE accounts ADD COLUMN email TEXT UNIQUE`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('遷移 email 欄位錯誤:', err.message);
+        } else if (!err) {
+            console.log('成功新增 email 欄位到 accounts 資料表');
+        }
+    });
+
+    db.run(`ALTER TABLE accounts ADD COLUMN last_login DATETIME`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('遷移 last_login 欄位錯誤:', err.message);
+        } else if (!err) {
+            console.log('成功新增 last_login 欄位到 accounts 資料表');
+        }
+    });
 });
 
 console.log('伺服器運行在 http://localhost:' + PORT);
