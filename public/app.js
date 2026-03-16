@@ -1519,7 +1519,7 @@ class MultiFingerprintApp {
 // 主題管理器
 class ThemeManager {
     constructor() {
-        this.theme = this.getStoredTheme() || 'light';
+        this.theme = this.getStoredTheme() || this.getSystemTheme();
         this.button = null;
         this.icon = null;
         this.init();
@@ -1553,6 +1553,14 @@ class ThemeManager {
         } catch (error) {
             console.warn('無法讀取主題設定:', error);
             return null;
+        }
+    }
+
+    getSystemTheme() {
+        try {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } catch (error) {
+            return 'light';
         }
     }
 
