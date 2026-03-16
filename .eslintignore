@@ -1,0 +1,7 @@
+node_modules/
+public/lib/
+public/app.js
+*.min.js
+fingerprints.db
+coverage/
+dist/
